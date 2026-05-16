@@ -1,0 +1,38 @@
+# Environment
+.env
+*.env.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Database
+*.db
+*.sqlite3
+
+# Uploads
+backend/uploads/
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+
+# AI checkpoints & model weights (94MB — too large for Git)
+ai/checkpoints/
+ai/data/
+backend/models/*.pth
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

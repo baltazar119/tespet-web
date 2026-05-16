@@ -1,0 +1,54 @@
+"use client";
+import { MapContainer, TileLayer, Circle, Popup, useMap } from "react-leaflet";
+import { type Disaster } from "@/lib/api";
+import { DISASTER_TYPE_LABELS } from "@/lib/utils";
+
+const TYPE_COLORS: Record<string, string> = {
+  deprem: "#f97316", sel: "#3b82f6", yangin: "#ef4444", dolu: "#06b6d4", heyelan: "#d97706",
+};
+
+function FlyTo({ disaster }: { disaster: Disaster | null }) {
+  const map = useMap();
+  if (disaster) map.flyTo([disaster.center_lat, disaster.center_lon], 9, { duration: 1 });
+  return null;
+}
+
+interface Props {
+  disasters: Disaster[];
+  selected: Disaster | null;
+  onSelect: (d: Disaster) => void;
+}
+
+export default function DisasterMap({ disasters, selected, onSelect }: Props) {
+  return (
+    <>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <MapContainer center={[39.0, 35.0]} zoom={6} style={{ height: "100%", width: "100%" }}>
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <FlyTo disaster={selected} />
+        {disasters.map((d) => (
+          <Circle
+            key={d.id}
+            center={[d.center_lat, d.center_lon]}
+            radius={d.radius_km * 1000}
+            pathOptions={{
+              color: TYPE_COLORS[d.disaster_type] ?? "#6b7280",
+              fillColor: TYPE_COLORS[d.disaster_type] ?? "#6b7280",
+              fillOpacity: selected?.id === d.id ? 0.3 : 0.15,
+              weight: selected?.id === d.id ? 3 : 1.5,
+            }}
+            eventHandlers={{ click: () => onSelect(d) }}
+          >
+            <Popup>
+              <div className="text-sm">
+                <strong>{d.name}</strong><br />
+                {DISASTER_TYPE_LABELS[d.disaster_type]} · Şiddet: {d.severity_score}/100<br />
+                {d.city} · {d.affected_policy_count ?? 0} poliçe
+              </div>
+            </Popup>
+          </Circle>
+        ))}
+      </MapContainer>
+    </>
+  );
+}
