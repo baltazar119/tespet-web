@@ -1,11 +1,18 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./tespet.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tespet.db")
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+# Supabase/PostgreSQL bağlantı string'ini SQLAlchemy formatına dönüştür
+# Supabase bazen "postgres://" prefix'i verir, SQLAlchemy "postgresql://" ister
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# SQLite için özel argüman, PostgreSQL'de gerekmez
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

@@ -4,7 +4,11 @@ import { type Disaster } from "@/lib/api";
 import { DISASTER_TYPE_LABELS } from "@/lib/utils";
 
 const TYPE_COLORS: Record<string, string> = {
-  deprem: "#f97316", sel: "#3b82f6", yangin: "#ef4444", dolu: "#06b6d4", heyelan: "#d97706",
+  deprem:  "#f59e0b",
+  sel:     "#3b82f6",
+  yangin:  "#ef4444",
+  dolu:    "#06b6d4",
+  heyelan: "#d97706",
 };
 
 function FlyTo({ disaster }: { disaster: Disaster | null }) {
@@ -17,14 +21,21 @@ interface Props {
   disasters: Disaster[];
   selected: Disaster | null;
   onSelect: (d: Disaster) => void;
+  heatMode?: boolean;
 }
 
-export default function DisasterMap({ disasters, selected, onSelect }: Props) {
+const GEO_TILE  = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const HEAT_TILE = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+
+export default function DisasterMap({ disasters, selected, onSelect, heatMode = false }: Props) {
   return (
     <>
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <MapContainer center={[39.0, 35.0]} zoom={6} style={{ height: "100%", width: "100%" }}>
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <TileLayer
+          key={heatMode ? "heat" : "geo"}
+          url={heatMode ? HEAT_TILE : GEO_TILE}
+        />
         <FlyTo disaster={selected} />
         {disasters.map((d) => (
           <Circle
@@ -32,9 +43,11 @@ export default function DisasterMap({ disasters, selected, onSelect }: Props) {
             center={[d.center_lat, d.center_lon]}
             radius={d.radius_km * 1000}
             pathOptions={{
-              color: TYPE_COLORS[d.disaster_type] ?? "#6b7280",
-              fillColor: TYPE_COLORS[d.disaster_type] ?? "#6b7280",
-              fillOpacity: selected?.id === d.id ? 0.3 : 0.15,
+              color:       TYPE_COLORS[d.disaster_type] ?? "#6b7280",
+              fillColor:   TYPE_COLORS[d.disaster_type] ?? "#6b7280",
+              fillOpacity: heatMode
+                ? (selected?.id === d.id ? 0.65 : 0.42)
+                : (selected?.id === d.id ? 0.30 : 0.15),
               weight: selected?.id === d.id ? 3 : 1.5,
             }}
             eventHandlers={{ click: () => onSelect(d) }}

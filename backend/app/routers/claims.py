@@ -1,6 +1,7 @@
 import uuid
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -11,9 +12,10 @@ from app.models.user import User
 from app.schemas.claim import ClaimOut, ClaimApprove, ClaimReject
 from app.routers.auth import get_current_user, require_insurer
 from app.services.nvidia_service import analyze_damage_with_vision, generate_expert_report
-from app.services.satellite_service import fetch_satellite_image
+from app.services.satellite_service import fetch_satellite_image, fetch_esri_satellite_tile
 from app.services.geo_service import score_to_priority
 from app.services.xview2_service import predict_satellite_damage
+from app.services.pdf_service import generate_claim_pdf
 
 router = APIRouter(prefix="/claims", tags=["claims"])
 
@@ -52,11 +54,14 @@ async def _run_ai_analysis(claim_id: int, db_url: str):
             claim.incident_lat, claim.incident_lon
         )
 
-        # 4) İki skoru birleştir — uydu %60, VLM %40
-        vlm_score = analysis.get("damage_score", 50)
-        sat_score = sat_result.get("satellite_score", vlm_score)
-        combined_score = round(sat_score * 0.6 + vlm_score * 0.4)
+        # 4) İki skoru birleştir — VLM %70, uydu %30
+        # VLM müşteri açıklamasını da okur → daha bağlamsal
+        # Uydu mevcut görüntü gösterir (hasar yılından sonra yenilenmiş olabilir)
+        vlm_score = int(analysis.get("damage_score") or 50)
+        sat_score = int(sat_result.get("satellite_score") or vlm_score)
+        combined_score = round(vlm_score * 0.7 + sat_score * 0.3)
         analysis["damage_score"] = combined_score
+        print(f"[AI] vlm={vlm_score} sat={sat_score} combined={combined_score}")
 
         # 5) Poliçe bilgilerini al
         policy = db.query(Policy).filter(Policy.id == claim.policy_id).first()
@@ -227,3 +232,54 @@ def reject_claim(
     db.commit()
     db.refresh(claim)
     return claim
+
+
+@router.get("/{claim_id}/report.pdf")
+async def download_report(
+    claim_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Hasar kaydı için PDF ekspertiz raporu üret ve indir."""
+    claim = db.query(Claim).filter(Claim.id == claim_id).first()
+    if not claim:
+        raise HTTPException(404, "Hasar kaydı bulunamadı")
+
+    # Yetki kontrolü: müşteri sadece kendi hasarını, sigorta şirketi kendi poliçelerini görebilir
+    if current_user.role == "customer" and claim.customer_id != current_user.id:
+        raise HTTPException(403, "Bu rapora erişim yetkiniz yok")
+
+    policy = db.query(Policy).filter(Policy.id == claim.policy_id).first() if claim.policy_id else None
+
+    # Hasar fotoğrafı
+    image_bytes = None
+    if claim.image_path:
+        try:
+            with open(claim.image_path, "rb") as f:
+                image_bytes = f.read()
+        except Exception:
+            pass
+
+    # Uydu görüntüsü (koordinattan gerçek zamanlı çek)
+    satellite_bytes = None
+    if claim.incident_lat and claim.incident_lon:
+        try:
+            satellite_bytes = await fetch_esri_satellite_tile(
+                claim.incident_lat, claim.incident_lon, zoom=17
+            )
+        except Exception:
+            pass
+
+    pdf_bytes = generate_claim_pdf(
+        claim=claim,
+        policy=policy,
+        image_bytes=image_bytes,
+        satellite_bytes=satellite_bytes,
+    )
+
+    filename = f"tespet-ekspertiz-{claim.claim_number}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -22,6 +22,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+export async function register(data: {
+  full_name: string; email: string; phone?: string; password: string;
+}) {
+  return request<{ access_token: string; role: string; full_name: string }>(
+    "/auth/register",
+    { method: "POST", body: JSON.stringify({ ...data, role: "customer" }) }
+  );
+}
+
+export async function forgotPassword(email: string) {
+  return request<{ message: string }>(
+    "/auth/forgot-password",
+    { method: "POST", body: JSON.stringify({ email }) }
+  );
+}
+
 export async function login(email: string, password: string) {
   return request<{ access_token: string; role: string; full_name: string; company_name?: string }>(
     "/auth/login",
@@ -78,6 +94,24 @@ export async function rejectClaim(id: number, insurer_notes: string) {
   });
 }
 
+export async function downloadClaimReport(id: number): Promise<void> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("tespet_token") : null;
+  const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const res = await fetch(`${BASE}/claims/${id}/report.pdf`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("PDF oluşturulamadı");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `tespet-ekspertiz-${id}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export async function getDisasters(status?: string) {
   const qs = status ? `?status=${status}` : "";
   return request<Disaster[]>(`/disasters/${qs}`);
@@ -91,8 +125,25 @@ export async function getAffectedPolicies(disasterId: number) {
   return request<AffectedPolicy[]>(`/disasters/${disasterId}/affected-policies`);
 }
 
+export async function analyzeDisasterSatellite(disasterId: number) {
+  return request<DisasterAnalysis>(`/disasters/${disasterId}/analyze`, { method: "POST" });
+}
+
 export async function getAnalytics() {
   return request<Analytics>("/analytics/summary");
+}
+
+export async function updateProfile(data: {
+  full_name?: string;
+  email?: string;
+  company_name?: string;
+  phone?: string;
+  password?: string;
+}) {
+  return request<{ id: number; email: string; full_name: string; role: string; company_name?: string }>(
+    "/auth/profile",
+    { method: "PATCH", body: JSON.stringify(data) }
+  );
 }
 
 // ── TYPES ──────────────────────────────────────────────────────────────────

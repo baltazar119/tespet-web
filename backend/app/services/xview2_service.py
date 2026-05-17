@@ -68,6 +68,9 @@ def predict_satellite_damage(image_bytes: bytes) -> dict:
       satellite_class       : no-damage/minor-damage/major-damage/destroyed
       satellite_probs       : [p0, p1, p2, p3]
     """
+    if not image_bytes:
+        return _mock_prediction(image_bytes)
+
     model = _load_model()
     if model is None:
         return _mock_prediction(image_bytes)

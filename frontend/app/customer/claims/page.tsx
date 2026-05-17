@@ -37,7 +37,7 @@ export default function CustomerClaimsPage() {
 
       <div className="space-y-4">
         {claims.map((c) => (
-          <div key={c.id} className="bg-white border border-gray-200 rounded-xl p-5">
+          <Link key={c.id} href={`/customer/claims/${c.id}`} className="block bg-white border border-gray-200 rounded-xl p-5 hover:border-[#026C7C]/40 hover:shadow-sm transition">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -88,11 +88,14 @@ export default function CustomerClaimsPage() {
               </div>
             )}
 
-            <div className="mt-4 pt-3 border-t text-xs text-gray-400 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              {c.created_at ? new Date(c.created_at).toLocaleDateString("tr-TR") : ""}
+            <div className="mt-4 pt-3 border-t text-xs text-gray-400 flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {c.created_at ? new Date(c.created_at).toLocaleDateString("tr-TR") : ""}
+              </div>
+              <span className="text-[#026C7C] font-medium">Detayları Görüntüle →</span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

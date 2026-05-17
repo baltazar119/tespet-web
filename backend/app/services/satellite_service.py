@@ -1,4 +1,5 @@
 import os
+import math
 import httpx
 from pathlib import Path
 
@@ -7,40 +8,38 @@ SENTINEL_HUB_CLIENT_SECRET = os.getenv("SENTINEL_HUB_CLIENT_SECRET", "")
 
 CACHE_DIR = Path(__file__).parent.parent.parent.parent / "data" / "satellite_cache"
 
-# Önbelleklenmiş görüntü koordinatları (demo afet lokasyonlarına yakın bölgeler)
-CACHED_REGIONS = [
-    {"lat": 37.57, "lon": 36.93, "label": "kahramanmaras", "file": "kahramanmaras_after.jpg"},
-    {"lat": 41.00, "lon": 28.97, "label": "istanbul",      "file": "istanbul_demo.jpg"},
-    {"lat": 38.41, "lon": 27.14, "label": "izmir",         "file": "izmir_demo.jpg"},
-    {"lat": 37.88, "lon": 32.49, "label": "konya",         "file": "konya_demo.jpg"},
-    {"lat": 39.92, "lon": 32.85, "label": "ankara",        "file": "ankara_demo.jpg"},
-]
+
+def _lat_lon_to_tile(lat: float, lon: float, zoom: int) -> tuple[int, int]:
+    lat_r = math.radians(lat)
+    n = 2 ** zoom
+    x = int((lon + 180) / 360 * n)
+    y = int((1 - math.log(math.tan(lat_r) + 1 / math.cos(lat_r)) / math.pi) / 2 * n)
+    return x, y
 
 
-def _find_closest_cached(lat: float, lon: float) -> Path | None:
-    from app.services.geo_service import haversine_km
-
-    best_file = None
-    best_dist = float("inf")
-    for region in CACHED_REGIONS:
-        dist = haversine_km(lat, lon, region["lat"], region["lon"])
-        candidate = CACHE_DIR / region["file"]
-        if dist < best_dist and candidate.exists():
-            best_dist = dist
-            best_file = candidate
-
-    return best_file if best_dist < 500 else None  # 500 km içindeyse kullan
+async def fetch_esri_satellite_tile(lat: float, lon: float, zoom: int = 18) -> bytes | None:
+    """Esri World Imagery'den gerçek Maxar uydu görüntüsü çek (API anahtarı gerekmez)."""
+    x, y = _lat_lon_to_tile(lat, lon, zoom)
+    url = f"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{zoom}/{y}/{x}"
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            resp = await client.get(url, headers={"User-Agent": "TespetApp/1.0"})
+            if resp.status_code == 200 and len(resp.content) > 500:
+                return resp.content
+    except Exception:
+        pass
+    return None
 
 
 async def fetch_satellite_image(lat: float, lon: float) -> bytes | None:
-    """Koordinata göre uydu görüntüsü getir. Önce cache, sonra Sentinel Hub."""
+    """Koordinata göre uydu görüntüsü getir. Esri primary, Sentinel Hub fallback."""
 
-    # 1. Önbellekten bak
-    cached = _find_closest_cached(lat, lon)
-    if cached:
-        return cached.read_bytes()
+    # 1. Esri World Imagery (Maxar — API anahtarı gerekmez)
+    img = await fetch_esri_satellite_tile(lat, lon, zoom=18)
+    if img:
+        return img
 
-    # 2. Sentinel Hub API
+    # 2. Sentinel Hub API (credentials varsa)
     if SENTINEL_HUB_CLIENT_ID and SENTINEL_HUB_CLIENT_SECRET:
         return await _fetch_from_sentinel_hub(lat, lon)
 

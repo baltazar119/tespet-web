@@ -24,10 +24,11 @@ node_modules/
 out/
 dist/
 
-# AI checkpoints & model weights (94MB — too large for Git)
+# AI checkpoints & egitim verisi
 ai/checkpoints/
 ai/data/
-backend/models/*.pth
+# best.pth Hugging Face Hub'dan yuklenir, Git'e dahil edilir
+# 90MB oldugu icin Git LFS ile push edilecek
 
 # OS
 .DS_Store
