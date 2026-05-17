@@ -13,9 +13,9 @@ const TYPE_COLORS: Record<string, string> = {
 
 function scoreColor(score?: number): string {
   if (score === undefined) return "#0891b2";
-  if (score >= 70) return "#ef4444";
-  if (score >= 40) return "#f97316";
-  if (score >= 15) return "#eab308";
+  if (score >= 85) return "#ef4444";
+  if (score >= 55) return "#f97316";
+  if (score >= 30) return "#eab308";
   return "#22c55e";
 }
 

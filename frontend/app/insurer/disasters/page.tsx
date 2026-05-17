@@ -401,8 +401,9 @@ export default function DisastersPage() {
                             <span className="text-xs text-gray-400">{p.property_city} · {p.distance_km} km</span>
                             {policyResult && (
                               <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
-                                policyResult.combined_score >= 70 ? "bg-red-100 text-red-700" :
-                                policyResult.combined_score >= 40 ? "bg-amber-100 text-amber-700" :
+                                policyResult.combined_score >= 85 ? "bg-red-100 text-red-700" :
+                                policyResult.combined_score >= 55 ? "bg-orange-100 text-orange-700" :
+                                policyResult.combined_score >= 30 ? "bg-yellow-100 text-yellow-700" :
                                 "bg-green-100 text-green-700"
                               }`}>
                                 Hasar {policyResult.combined_score}/100

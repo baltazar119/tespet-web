@@ -159,7 +159,7 @@ async def analyze_disaster_satellite(
         # 5) Ekspertiz raporu (sadece anlamlı hasarda)
         report      = None
         claim_num   = f"TES-{uuid.uuid4().hex[:8].upper()}"
-        if combined_score >= 15:
+        if combined_score >= 30:
             policy_data = {
                 "policy_number":    policy.policy_number,
                 "policy_type":      str(policy.policy_type.value if hasattr(policy.policy_type, "value") else policy.policy_type),
@@ -224,7 +224,7 @@ async def analyze_disaster_satellite(
         claim_number = None
         auto_created = False
 
-        if not existing and combined_score >= 15:
+        if not existing and combined_score >= 30:
             cost = analysis.get("estimated_repair_cost_range", {})
             new_claim = Claim(
                 claim_number              = pr["claim_num"],
