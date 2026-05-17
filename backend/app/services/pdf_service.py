@@ -55,23 +55,21 @@ class TespetPDF(FPDF):
     """Tespet markasına uygun özel PDF sınıfı."""
 
     def header(self):
-        # Koyu arka plan çubuğu
-        self.set_fill_color(16, 19, 41)   # #101329
+        self.set_fill_color(16, 19, 41)
         self.rect(0, 0, 210, 22, "F")
 
-        # Logo metni (gerçek logo yoksa)
         self.set_font("Helvetica", "B", 14)
-        self.set_text_color(187, 229, 237)   # #BBE5ED
+        self.set_text_color(187, 229, 237)
         self.set_xy(10, 6)
-        self.cell(60, 10, "TESPET", ln=False)
+        self.cell(60, 10, "TESPET", new_x=XPos.RIGHT, new_y=YPos.TOP)
 
-        # Sağda platform ismi
         self.set_font("Helvetica", "", 8)
         self.set_text_color(187, 229, 237)
         self.set_xy(100, 8)
-        self.cell(100, 6, "Afet Analiz ve Hasar Tespit Platformu", align="R")
+        self.cell(100, 6, "Afet Analiz ve Hasar Tespit Platformu",
+                  new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-        self.ln(18)
+        self.ln(10)
 
     def footer(self):
         self.set_y(-15)
@@ -80,7 +78,7 @@ class TespetPDF(FPDF):
         self.cell(0, 10,
                   f"Tespet AI Ekspertiz Sistemi  |  Sayfa {self.page_no()}/{{nb}}  |  "
                   f"Gizli ve Kisisel  |  {datetime.now().strftime('%d.%m.%Y')}",
-                  align="C")
+                  new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     # ── Yardımcı metodlar ─────────────────────────────────────────────────
 

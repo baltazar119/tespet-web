@@ -308,12 +308,17 @@ async def download_report(
         except Exception:
             pass
 
-    pdf_bytes = generate_claim_pdf(
-        claim=claim,
-        policy=policy,
-        image_bytes=image_bytes,
-        satellite_bytes=satellite_bytes,
-    )
+    try:
+        pdf_bytes = generate_claim_pdf(
+            claim=claim,
+            policy=policy,
+            image_bytes=image_bytes,
+            satellite_bytes=satellite_bytes,
+        )
+    except Exception as exc:
+        import traceback
+        print(f"[PDF ERROR] claim_id={claim_id}: {traceback.format_exc()}")
+        raise HTTPException(500, f"PDF olusturulamadi: {exc}")
 
     filename = f"tespet-ekspertiz-{claim.claim_number}.pdf"
     return Response(

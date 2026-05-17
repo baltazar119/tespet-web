@@ -100,7 +100,10 @@ export async function downloadClaimReport(id: number): Promise<void> {
   const res = await fetch(`${BASE}/claims/${id}/report.pdf`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error("PDF oluşturulamadı");
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(errBody.detail || "PDF oluşturulamadı");
+  }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
