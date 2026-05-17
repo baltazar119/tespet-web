@@ -25,7 +25,7 @@ interface Props {
 }
 
 const GEO_TILE  = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const HEAT_TILE = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const HEAT_TILE = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png";
 
 export default function DisasterMap({ disasters, selected, onSelect, heatMode = false }: Props) {
   return (

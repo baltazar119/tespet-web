@@ -265,7 +265,7 @@ async def get_satellite_image(
 
     # Yoksa koordinattan gerçek zamanlı çek
     if claim.incident_lat and claim.incident_lon:
-        img = await fetch_esri_satellite_tile(claim.incident_lat, claim.incident_lon, zoom=16)
+        img = await fetch_esri_satellite_tile(claim.incident_lat, claim.incident_lon, zoom=18)
         if img:
             return Response(content=img, media_type="image/jpeg")
 

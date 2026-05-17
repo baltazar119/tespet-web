@@ -9,35 +9,41 @@ from typing import Optional
 
 from fpdf import FPDF, XPos, YPos
 
+# Helvetica (Latin-1) can't render Turkish-specific chars: ğ Ğ ı İ ş Ş
+# All labels below are intentionally ASCII-safe.
+_TR_MAP = str.maketrans("ğĞıİşŞ", "gGiIsS")
 
-# Hasar kategorisi Türkçe karşılıkları
+def _safe(text: str) -> str:
+    """Transliterate non-Latin-1 Turkish chars so Helvetica can render them."""
+    return str(text).translate(_TR_MAP)
+
 DAMAGE_LABELS = {
     "none":     "Hasar Yok",
     "minor":    "Hafif Hasar",
     "moderate": "Orta Hasar",
-    "severe":   "Ağır Hasar",
+    "severe":   "Agir Hasar",
     "total":    "Tam Hasar (Total Zarar)",
 }
 
 PRIORITY_LABELS = {
-    "low":      "Düşük",
+    "low":      "Dusuk",
     "medium":   "Orta",
-    "high":     "Yüksek",
+    "high":     "Yuksek",
     "critical": "Kritik",
 }
 
 STATUS_LABELS = {
     "pending":   "Bekliyor",
     "analyzing": "Analiz Ediliyor",
-    "reviewed":  "İncelendi",
-    "approved":  "Onaylandı",
+    "reviewed":  "Incelendi",
+    "approved":  "Onaylandi",
     "rejected":  "Reddedildi",
 }
 
 DISASTER_LABELS = {
     "deprem":   "Deprem",
     "sel":      "Sel",
-    "yangin":   "Yangın",
+    "yangin":   "Yangin",
     "dolu":     "Dolu",
     "heyelan":  "Heyelan",
 }
@@ -212,7 +218,7 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
         pdf.kv_row("Police Numarasi", policy.policy_number or "-")
         pdf.kv_row("Police Turu", policy.policy_type or "-")
         pdf.kv_row("Sigorta Bedeli", f"{policy.coverage_amount:,.0f} TL" if policy.coverage_amount else "-")
-        pdf.kv_row("Sigortalı Mulk", f"{policy.property_address}, {policy.property_city}")
+        pdf.kv_row("Mulk Adresi", _safe(f"{policy.property_address}, {policy.property_city}"))
         pdf.kv_row("Mulk Alani", f"{policy.property_area_m2} m2" if policy.property_area_m2 else "-")
     else:
         pdf.kv_row("Police", "Bilgi bulunamadi")
@@ -221,7 +227,7 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
     pdf.section_title("3. HASAR BASVURU BILGILERI")
     disaster_type = getattr(claim, "disaster_type", "")
     pdf.kv_row("Afet Turu", DISASTER_LABELS.get(disaster_type, disaster_type))
-    pdf.kv_row("Basvuru Aciklamasi", getattr(claim, "description", "-") or "-")
+    pdf.kv_row("Basvuru Aciklamasi", _safe(getattr(claim, "description", "-") or "-"))
     pdf.kv_row("Olay Koordinati",
                f"{claim.incident_lat:.5f}N, {claim.incident_lon:.5f}E"
                if getattr(claim, "incident_lat", None) else "-")
@@ -270,7 +276,7 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
         pdf.cell(55, 7, "AI Degerlendirmesi:")
         pdf.set_font("Helvetica", "I", 9)
         pdf.set_text_color(50, 50, 50)
-        pdf.multi_cell(0, 6, ai_notes)
+        pdf.multi_cell(0, 6, _safe(ai_notes))
 
     # ── 5. Görsel Belgeler ─────────────────────────────────────────────────
     has_images = image_bytes or satellite_bytes
@@ -295,7 +301,7 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
                 img_stream = io.BytesIO(image_bytes)
                 pdf.set_font("Helvetica", "B", 8)
                 pdf.set_text_color(80, 80, 80)
-                pdf.cell(0, 6, "Hasar Fotografı (Kullanici Yukledi):",
+                pdf.cell(0, 6, "Hasar Fotografi (Kullanici Yukledi):",
                          new_x=XPos.LMARGIN, new_y=YPos.NEXT)
                 pdf.image(img_stream, w=90)
                 pdf.ln(2)
@@ -310,14 +316,15 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
         pdf.set_text_color(40, 40, 40)
         # Uzun metni satır satır yaz
         for line in (expert_report or "").splitlines():
-            if line.strip().isupper() and len(line.strip()) > 4:
+            safe_line = _safe(line)
+            if safe_line.strip().isupper() and len(safe_line.strip()) > 4:
                 pdf.set_font("Helvetica", "B", 9)
                 pdf.set_text_color(16, 19, 41)
-                pdf.multi_cell(0, 6, line)
+                pdf.multi_cell(0, 6, safe_line)
                 pdf.set_font("Helvetica", "", 8)
                 pdf.set_text_color(40, 40, 40)
             else:
-                pdf.multi_cell(0, 5, line)
+                pdf.multi_cell(0, 5, safe_line)
 
     # ── 7. Sigorta Kararı ─────────────────────────────────────────────────
     approved_amount = getattr(claim, "approved_amount", None)
@@ -341,7 +348,7 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
                      new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
         if insurer_notes:
-            pdf.kv_row("Sigorta Notu", insurer_notes)
+            pdf.kv_row("Sigorta Notu", _safe(insurer_notes))
 
     # ── İmza alanı ────────────────────────────────────────────────────────
     pdf.ln(6)
