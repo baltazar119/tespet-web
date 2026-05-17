@@ -3,6 +3,7 @@ import math
 import httpx
 from pathlib import Path
 
+GOOGLE_MAPS_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 MAPBOX_TOKEN = os.getenv("MAPBOX_TOKEN", "")
 SENTINEL_HUB_CLIENT_ID = os.getenv("SENTINEL_HUB_CLIENT_ID", "")
 SENTINEL_HUB_CLIENT_SECRET = os.getenv("SENTINEL_HUB_CLIENT_SECRET", "")
@@ -18,11 +19,33 @@ def _lat_lon_to_tile(lat: float, lon: float, zoom: int) -> tuple[int, int]:
     return x, y
 
 
+async def fetch_google_satellite(lat: float, lon: float, zoom: int = 18) -> bytes | None:
+    """Google Maps Static API — en güncel uydu görüntüsü."""
+    if not GOOGLE_MAPS_KEY:
+        return None
+    url = (
+        f"https://maps.googleapis.com/maps/api/staticmap"
+        f"?center={lat},{lon}"
+        f"&zoom={zoom}"
+        f"&size=600x400"
+        f"&scale=2"
+        f"&maptype=satellite"
+        f"&key={GOOGLE_MAPS_KEY}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(url, headers={"User-Agent": "TespetApp/1.0"})
+            if resp.status_code == 200 and len(resp.content) > 500:
+                return resp.content
+    except Exception:
+        pass
+    return None
+
+
 async def fetch_mapbox_satellite(lat: float, lon: float, zoom: int = 17) -> bytes | None:
     """Mapbox Satellite-v9 static image — güncel Maxar/Airbus görüntüsü."""
     if not MAPBOX_TOKEN:
         return None
-    # Mapbox static: lon,lat sırası; @2x retina kalite
     url = (
         f"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/"
         f"{lon},{lat},{zoom}/600x400@2x"
@@ -57,20 +80,26 @@ async def fetch_esri_satellite_tile(lat: float, lon: float, zoom: int = 18) -> b
 
 async def fetch_satellite_image(lat: float, lon: float) -> bytes | None:
     """Koordinata göre uydu görüntüsü getir.
-    Öncelik: Mapbox (güncel) → Esri (fallback) → Sentinel Hub."""
+    Öncelik: Google Maps → Mapbox → Esri → Sentinel Hub"""
 
-    # 1. Mapbox Satellite-v9 — token varsa en güncel kaynak
+    # 1. Google Maps Static API — en güncel, key varsa
+    if GOOGLE_MAPS_KEY:
+        img = await fetch_google_satellite(lat, lon, zoom=18)
+        if img:
+            return img
+
+    # 2. Mapbox Satellite — alternatif güncel kaynak
     if MAPBOX_TOKEN:
         img = await fetch_mapbox_satellite(lat, lon, zoom=17)
         if img:
             return img
 
-    # 2. Esri World Imagery — ücretsiz fallback
+    # 3. Esri World Imagery — ücretsiz fallback
     img = await fetch_esri_satellite_tile(lat, lon, zoom=18)
     if img:
         return img
 
-    # 3. Sentinel Hub (credentials varsa)
+    # 4. Sentinel Hub (credentials varsa)
     if SENTINEL_HUB_CLIENT_ID and SENTINEL_HUB_CLIENT_SECRET:
         return await _fetch_from_sentinel_hub(lat, lon)
 

@@ -12,7 +12,7 @@ from app.models.user import User
 from app.schemas.claim import ClaimOut, ClaimApprove, ClaimReject
 from app.routers.auth import get_current_user, require_insurer
 from app.services.nvidia_service import analyze_damage_with_vision, generate_expert_report
-from app.services.satellite_service import fetch_satellite_image, fetch_esri_satellite_tile
+from app.services.satellite_service import fetch_satellite_image, fetch_esri_satellite_tile, fetch_google_satellite
 from app.services.geo_service import score_to_priority
 from app.services.xview2_service import predict_satellite_damage
 from app.services.pdf_service import generate_claim_pdf
@@ -263,9 +263,9 @@ async def get_satellite_image(
         except Exception:
             pass
 
-    # Yoksa koordinattan gerçek zamanlı çek
+    # Yoksa koordinattan gerçek zamanlı çek (Google → Esri fallback)
     if claim.incident_lat and claim.incident_lon:
-        img = await fetch_esri_satellite_tile(claim.incident_lat, claim.incident_lon, zoom=18)
+        img = await fetch_satellite_image(claim.incident_lat, claim.incident_lon)
         if img:
             return Response(content=img, media_type="image/jpeg")
 
@@ -298,12 +298,12 @@ async def download_report(
         except Exception:
             pass
 
-    # Uydu görüntüsü (koordinattan gerçek zamanlı çek)
+    # Uydu görüntüsü (Google → Esri fallback)
     satellite_bytes = None
     if claim.incident_lat and claim.incident_lon:
         try:
-            satellite_bytes = await fetch_esri_satellite_tile(
-                claim.incident_lat, claim.incident_lon, zoom=17
+            satellite_bytes = await fetch_satellite_image(
+                claim.incident_lat, claim.incident_lon
             )
         except Exception:
             pass
