@@ -40,7 +40,10 @@ app.include_router(analytics.router)
 
 @app.on_event("startup")
 def startup():
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"[DB] Tablo olusturma hatasi (devam ediliyor): {e}")
 
 
 @app.get("/health")
