@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   getDisasters, getAffectedPolicies, getClaims, analyzeDisasterSatellite,
   type Disaster, type AffectedPolicy, type DisasterAnalysis,
 } from "@/lib/api";
 import { DISASTER_TYPE_LABELS, formatCurrency } from "@/lib/utils";
 import dynamic from "next/dynamic";
-import { MapPin, Map, Search, ArrowRight, Loader2, Satellite, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { MapPin, Map, Search, ArrowRight, Loader2, Satellite, List, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const DisasterMap = dynamic(() => import("@/components/DisasterMap"), { ssr: false });
@@ -69,7 +69,6 @@ export default function DisastersPage() {
   const [search, setSearch]               = useState("");
   const [heatMode, setHeatMode]           = useState(false);
   const [navigating, setNavigating]       = useState<number | null>(null);
-  const [onlyPolicies, setOnlyPolicies]   = useState(false);
   const [analyzing, setAnalyzing]         = useState<number | null>(null);
   const [analysisResult, setAnalysisResult] = useState<DisasterAnalysis | null>(null);
   const [analyzeError, setAnalyzeError]   = useState<string | null>(null);
@@ -101,10 +100,6 @@ export default function DisastersPage() {
   }
 
   async function handleAnalyze(d: Disaster) {
-    if (onlyPolicies) {
-      await handleSelect(d);
-      return;
-    }
     setSelected(d);
     setAnalysisResult(null);
     setAnalyzeError(null);
@@ -121,6 +116,22 @@ export default function DisastersPage() {
       setAnalyzing(null);
     }
   }
+
+  const policyMarkers = useMemo(() => {
+    if (!affected.length) return [];
+    return affected
+      .filter((p) => p.lat != null && p.lon != null)
+      .map((p) => {
+        const result = analysisResult?.results.find((r) => r.policy_id === p.policy_id);
+        return {
+          lat: p.lat!,
+          lon: p.lon!,
+          score: result?.combined_score,
+          policyNumber: p.policy_number,
+          policyId: p.policy_id,
+        };
+      });
+  }, [affected, analysisResult]);
 
   const statValues: Record<string, number> = {
     active:        disasters.filter((d) => d.status === "active").length,
@@ -264,36 +275,30 @@ export default function DisastersPage() {
                   </div>
                 </div>{/* içerik div kapanışı */}
 
-                {/* Kart alt çubuğu: checkbox + buton — dış div onClick YOK */}
-                <div className="flex items-center border-t border-black/5">
-                  {/* Sadece Poliçe checkbox */}
-                  <label className="flex items-center gap-1.5 px-3 py-2.5 text-xs text-gray-500 cursor-pointer select-none shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={onlyPolicies}
-                      onChange={(e) => setOnlyPolicies(e.target.checked)}
-                      className="accent-[#026C7C] w-3.5 h-3.5"
-                    />
-                    Sadece listele
-                  </label>
-
+                {/* Kart alt çubuğu: iki ayrı buton — dış div onClick YOK */}
+                <div className="grid grid-cols-2 divide-x divide-black/5 border-t border-black/5">
+                  <button
+                    onClick={() => handleSelect(d)}
+                    disabled={isAnalyzing}
+                    className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    Listele
+                  </button>
                   <button
                     onClick={() => handleAnalyze(d)}
                     disabled={isAnalyzing}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition cursor-pointer ${footerBg} disabled:opacity-60 disabled:cursor-not-allowed`}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition cursor-pointer ${footerBg} disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
                     {isAnalyzing ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         Analiz ediliyor…
                       </>
-                    ) : onlyPolicies ? (
-                      <>
-                        <span>☰</span> Poliçeleri Göster <span>›</span>
-                      </>
                     ) : (
                       <>
-                        <Satellite className="w-3.5 h-3.5" /> Uydu Analizi Yap <span>›</span>
+                        <Satellite className="w-3.5 h-3.5" />
+                        Uydu Analizi
                       </>
                     )}
                   </button>
@@ -316,6 +321,7 @@ export default function DisastersPage() {
               selected={selected}
               onSelect={handleSelect}
               heatMode={heatMode}
+              policyMarkers={policyMarkers}
             />
             <button
               onClick={() => setHeatMode(!heatMode)}

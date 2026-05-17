@@ -238,6 +238,8 @@ export interface AffectedPolicy {
   policy_type: string;
   distance_km: number;
   priority_score: number;
+  lat?: number;
+  lon?: number;
 }
 
 export interface DisasterPolicyResult {
