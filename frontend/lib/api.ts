@@ -239,16 +239,27 @@ export interface DisasterPolicyResult {
   policy_type: string;
   distance_km: number;
   priority_score: number;
-  damage_class?: string;
-  satellite_score?: number;
+  satellite_class: string;
+  combined_score: number;
+  estimated_loss: number;
+  image_source: string;
+  auto_created?: boolean;
+  claim_number?: string;
+}
+
+export interface DisasterAnalysisSummary {
+  total_policies: number;
+  total_risk_tl: number;
+  auto_claims: number;
+  destroyed: number;
+  major_damage: number;
+  avg_score: number;
 }
 
 export interface DisasterAnalysis {
   disaster_id: number;
-  total_analyzed: number;
-  damage_summary: Record<string, number>;
-  avg_satellite_score: number;
-  policies: DisasterPolicyResult[];
+  results: DisasterPolicyResult[];
+  summary: DisasterAnalysisSummary;
 }
 
 export interface Analytics {
