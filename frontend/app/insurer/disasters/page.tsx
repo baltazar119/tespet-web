@@ -1,9 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getDisasters, getAffectedPolicies, getClaims, type Disaster, type AffectedPolicy } from "@/lib/api";
+import {
+  getDisasters, getAffectedPolicies, getClaims, analyzeDisasterSatellite,
+  type Disaster, type AffectedPolicy, type DisasterAnalysis,
+} from "@/lib/api";
 import { DISASTER_TYPE_LABELS, formatCurrency } from "@/lib/utils";
 import dynamic from "next/dynamic";
-import { MapPin, Map, Search, ArrowRight, Loader2 } from "lucide-react";
+import { MapPin, Map, Search, ArrowRight, Loader2, Satellite, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const DisasterMap = dynamic(() => import("@/components/DisasterMap"), { ssr: false });
@@ -58,14 +61,18 @@ const STATS = [
 
 export default function DisastersPage() {
   const router = useRouter();
-  const [disasters, setDisasters] = useState<Disaster[]>([]);
-  const [selected, setSelected]   = useState<Disaster | null>(null);
-  const [affected, setAffected]   = useState<AffectedPolicy[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [filter, setFilter]       = useState<string | null>(null);
-  const [search, setSearch]       = useState("");
-  const [heatMode, setHeatMode]   = useState(false);
-  const [navigating, setNavigating] = useState<number | null>(null);
+  const [disasters, setDisasters]         = useState<Disaster[]>([]);
+  const [selected, setSelected]           = useState<Disaster | null>(null);
+  const [affected, setAffected]           = useState<AffectedPolicy[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [filter, setFilter]               = useState<string | null>(null);
+  const [search, setSearch]               = useState("");
+  const [heatMode, setHeatMode]           = useState(false);
+  const [navigating, setNavigating]       = useState<number | null>(null);
+  const [onlyPolicies, setOnlyPolicies]   = useState(false);
+  const [analyzing, setAnalyzing]         = useState<number | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<DisasterAnalysis | null>(null);
+  const [analyzeError, setAnalyzeError]   = useState<string | null>(null);
 
   async function goToClaim(policyId: number) {
     setNavigating(policyId);
@@ -87,8 +94,32 @@ export default function DisastersPage() {
 
   async function handleSelect(d: Disaster) {
     setSelected(d);
+    setAnalysisResult(null);
+    setAnalyzeError(null);
     const policies = await getAffectedPolicies(d.id);
     setAffected(policies);
+  }
+
+  async function handleAnalyze(d: Disaster) {
+    if (onlyPolicies) {
+      await handleSelect(d);
+      return;
+    }
+    setSelected(d);
+    setAnalysisResult(null);
+    setAnalyzeError(null);
+    setAnalyzing(d.id);
+    try {
+      const policies = await getAffectedPolicies(d.id);
+      setAffected(policies);
+      const result = await analyzeDisasterSatellite(d.id);
+      setAnalysisResult(result);
+      getDisasters().then(setDisasters);
+    } catch (err: unknown) {
+      setAnalyzeError(err instanceof Error ? err.message : "Analiz sırasında bir hata oluştu.");
+    } finally {
+      setAnalyzing(null);
+    }
   }
 
   const statValues: Record<string, number> = {
@@ -191,16 +222,17 @@ export default function DisastersPage() {
             const footerBg = CARD_FOOTER[d.disaster_type] ?? "bg-gray-100 text-gray-700 hover:bg-gray-200";
             const badge    = TYPE_BADGE[d.disaster_type]  ?? "bg-gray-100 text-gray-600 border-gray-200";
             const isSel    = selected?.id === d.id;
+            const isAnalyzing = analyzing === d.id;
 
             return (
               <div
                 key={d.id}
-                onClick={() => handleSelect(d)}
-                className={`w-full text-left border rounded-xl overflow-hidden cursor-pointer transition-all ${cardBg} ${
+                className={`w-full text-left border rounded-xl overflow-hidden transition-all ${cardBg} ${
                   isSel ? "ring-2 ring-[#026C7C] ring-offset-1 shadow-md" : "hover:shadow-md"
                 }`}
               >
-                <div className="p-4 pb-3">
+                {/* Tıklanabilir içerik alanı — sadece burası afet seçer */}
+                <div className="p-4 pb-3 cursor-pointer" onClick={() => handleSelect(d)}>
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="font-semibold text-gray-900 text-sm">{d.name}</div>
@@ -230,13 +262,41 @@ export default function DisastersPage() {
                       <span>Uydu: <span className="font-semibold text-[#931F1D]">{d.satellite_damage_score}/100</span></span>
                     )}
                   </div>
-                </div>
+                </div>{/* içerik div kapanışı */}
 
-                <div
-                  onClick={(e) => { e.stopPropagation(); handleSelect(d); }}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition cursor-pointer ${footerBg}`}
-                >
-                  <span>↻</span> Uydu Analizi Yap <span>›</span>
+                {/* Kart alt çubuğu: checkbox + buton — dış div onClick YOK */}
+                <div className="flex items-center border-t border-black/5">
+                  {/* Sadece Poliçe checkbox */}
+                  <label className="flex items-center gap-1.5 px-3 py-2.5 text-xs text-gray-500 cursor-pointer select-none shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={onlyPolicies}
+                      onChange={(e) => setOnlyPolicies(e.target.checked)}
+                      className="accent-[#026C7C] w-3.5 h-3.5"
+                    />
+                    Sadece listele
+                  </label>
+
+                  <button
+                    onClick={() => handleAnalyze(d)}
+                    disabled={isAnalyzing}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition cursor-pointer ${footerBg} disabled:opacity-60 disabled:cursor-not-allowed`}
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Analiz ediliyor…
+                      </>
+                    ) : onlyPolicies ? (
+                      <>
+                        <span>☰</span> Poliçeleri Göster <span>›</span>
+                      </>
+                    ) : (
+                      <>
+                        <Satellite className="w-3.5 h-3.5" /> Uydu Analizi Yap <span>›</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             );
@@ -248,7 +308,7 @@ export default function DisastersPage() {
 
           {/* Harita */}
           <div
-            className="relative bg-white border border-gray-200 rounded-xl overflow-hidden"
+            className="relative z-0 bg-white border border-gray-200 rounded-xl overflow-hidden"
             style={{ height: 480 }}
           >
             <DisasterMap
@@ -266,7 +326,40 @@ export default function DisastersPage() {
             </button>
           </div>
 
-          {/* Etkilenen Poliçeler — her zaman görünür */}
+          {/* Analiz Sonucu Özet Kartı */}
+          {analyzeError && (
+            <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-sm text-red-700">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{analyzeError}</span>
+            </div>
+          )}
+
+          {analysisResult && (
+            <div className="bg-white border border-[#026C7C]/20 rounded-xl overflow-hidden shadow-sm">
+              <div className="flex items-center gap-2 px-5 py-3 bg-[#026C7C]/10 border-b border-[#026C7C]/10">
+                <CheckCircle2 className="w-4 h-4 text-[#026C7C]" />
+                <span className="font-semibold text-[#026C7C] text-sm">
+                  Uydu Analizi Tamamlandı — {analysisResult.summary.auto_claims} hasar kaydı otomatik oluşturuldu
+                </span>
+              </div>
+              <div className="grid grid-cols-5 divide-x divide-gray-100 text-center">
+                {[
+                  { label: "Analiz Edilen", value: analysisResult.summary.total_policies },
+                  { label: "Ort. Hasar Skoru", value: `${analysisResult.summary.avg_score}/100` },
+                  { label: "Yıkık Bina", value: analysisResult.summary.destroyed },
+                  { label: "Büyük Hasar", value: analysisResult.summary.major_damage },
+                  { label: "Toplam Risk", value: formatCurrency(analysisResult.summary.total_risk_tl) },
+                ].map(({ label, value }) => (
+                  <div key={label} className="py-3 px-2">
+                    <div className="text-lg font-black text-[#101329]">{value}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Etkilenen Poliçeler */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             {selected ? (
               <>
@@ -274,34 +367,55 @@ export default function DisastersPage() {
                   <h3 className="font-semibold text-[#101329] text-sm">
                     {selected.name} — Etkilenen Poliçeler ({affected.length})
                   </h3>
+                  {analyzing === selected.id && (
+                    <span className="flex items-center gap-1.5 text-xs text-[#026C7C]">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Uydu analizi yapılıyor, lütfen bekleyin…
+                    </span>
+                  )}
                 </div>
                 <div className="divide-y divide-gray-50 max-h-52 overflow-y-auto">
                   {affected.length === 0 ? (
                     <div className="py-8 text-center text-gray-400 text-sm">Bu afet için etkilenen poliçe bulunamadı.</div>
                   ) : (
-                    affected.slice(0, 15).map((p, i) => (
-                      <button
-                        key={p.policy_id}
-                        onClick={() => goToClaim(p.policy_id)}
-                        disabled={navigating === p.policy_id}
-                        className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-[#D8EEF2]/30 transition text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-bold w-6 ${i < 3 ? "text-[#931F1D]" : i < 8 ? "text-amber-500" : "text-gray-300"}`}>
-                            #{i + 1}
-                          </span>
-                          <span className="text-sm font-medium text-gray-800">{p.policy_number}</span>
-                          <span className="text-xs text-gray-400">{p.property_city} · {p.distance_km} km</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-[#026C7C]">{formatCurrency(p.coverage_amount)}</span>
-                          {navigating === p.policy_id
-                            ? <Loader2 className="w-3.5 h-3.5 text-[#026C7C] animate-spin" />
-                            : <ArrowRight className="w-3.5 h-3.5 text-[#026C7C]/40" />
-                          }
-                        </div>
-                      </button>
-                    ))
+                    affected.slice(0, 15).map((p, i) => {
+                      const policyResult = analysisResult?.results.find((r) => r.policy_id === p.policy_id);
+                      return (
+                        <button
+                          key={p.policy_id}
+                          onClick={() => goToClaim(p.policy_id)}
+                          disabled={navigating === p.policy_id}
+                          className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-[#D8EEF2]/30 transition text-left"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold w-6 ${i < 3 ? "text-[#931F1D]" : i < 8 ? "text-amber-500" : "text-gray-300"}`}>
+                              #{i + 1}
+                            </span>
+                            <span className="text-sm font-medium text-gray-800">{p.policy_number}</span>
+                            <span className="text-xs text-gray-400">{p.property_city} · {p.distance_km} km</span>
+                            {policyResult && (
+                              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                                policyResult.combined_score >= 70 ? "bg-red-100 text-red-700" :
+                                policyResult.combined_score >= 40 ? "bg-amber-100 text-amber-700" :
+                                "bg-green-100 text-green-700"
+                              }`}>
+                                Hasar {policyResult.combined_score}/100
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-[#026C7C]">{formatCurrency(p.coverage_amount)}</span>
+                            {policyResult && (
+                              <span className="text-xs text-gray-500">{formatCurrency(policyResult.estimated_loss)} risk</span>
+                            )}
+                            {navigating === p.policy_id
+                              ? <Loader2 className="w-3.5 h-3.5 text-[#026C7C] animate-spin" />
+                              : <ArrowRight className="w-3.5 h-3.5 text-[#026C7C]/40" />
+                            }
+                          </div>
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               </>

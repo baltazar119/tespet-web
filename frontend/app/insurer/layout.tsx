@@ -148,7 +148,7 @@ export default function InsurerLayout({ children }: { children: React.ReactNode 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Üst bar ─────────────────────────────────────────────────── */}
-      <header className="bg-[#101329] sticky top-0 z-20 shadow-lg">
+      <header className="bg-[#101329] sticky top-0 z-[1100] shadow-lg">
         <div className="flex items-stretch h-24 px-6 gap-4">
 
           {/* Logo */}

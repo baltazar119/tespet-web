@@ -8,7 +8,7 @@ from app.models.user import User
 from app.schemas.disaster import DisasterCreate, DisasterOut
 from app.routers.auth import get_current_user, require_insurer
 from app.services.geo_service import find_affected_policies
-from app.services.satellite_service import fetch_esri_satellite_tile
+from app.services.satellite_service import fetch_satellite_image
 from app.services.xview2_service import predict_satellite_damage
 
 router = APIRouter(prefix="/disasters", tags=["disasters"])
@@ -112,9 +112,9 @@ async def analyze_disaster_satellite(
         policy = item["policy"]
         dist   = item["distance_km"]
 
-        # 1) Gerçek Esri/Maxar uydu görüntüsü çek
-        image_bytes = await fetch_esri_satellite_tile(
-            policy.property_lat, policy.property_lon, zoom=18
+        # 1) Uydu görüntüsü çek (Google → Esri fallback)
+        image_bytes = await fetch_satellite_image(
+            policy.property_lat, policy.property_lon
         )
 
         # 2) xView2 hasar analizi
@@ -219,7 +219,7 @@ async def analyze_disaster_satellite(
             "satellite_confidence": sat.get("satellite_confidence"),
             "combined_score":       combined_score,
             "estimated_loss":       estimated_loss,
-            "image_source":         "esri_maxar" if image_bytes else "mock",
+            "image_source":         "satellite" if image_bytes else "mock",
             "claim_number":         claim_number,
             "auto_created":         auto_created,
         })

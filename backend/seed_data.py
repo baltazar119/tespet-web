@@ -15,17 +15,14 @@ from app.models.claim import ClaimStatus, DamageCategory, PriorityLevel
 from app.models.disaster import DisasterType, DisasterStatus
 from passlib.context import CryptContext
 
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 db = SessionLocal()
 
 
 def clear():
-    db.query(Claim).delete()
-    db.query(Policy).delete()
-    db.query(Disaster).delete()
-    db.query(User).delete()
-    db.commit()
+    pass  # drop_all + create_all zaten temiz schema ile basladi
 
 
 REPORT_DEPREM_AGIR = """EKSPERTIZ RAPORU
@@ -392,6 +389,73 @@ def run():
                property_district="Karatay", property_lat=37.86, property_lon=32.61,
                property_area_m2=15000, coverage_amount=420_000, premium_amount=980,
                start_date="2023-04-01", end_date="2024-04-01"),
+
+        # --- Kahramanmaras bolgesi poliçeleri (afet merkezi: 37.57, 36.93, r=120km) ---
+        Policy(policy_number="ANS-2023-00610", customer_id=c[1].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.deprem, status=PolicyStatus.active,
+               property_address="Sahinbey Mah. Ataturk Blv. No:112 D:4", property_city="Gaziantep",
+               property_district="Sahinbey", property_lat=37.066, property_lon=37.383,
+               property_area_m2=115, coverage_amount=2_800_000, premium_amount=5_200,
+               start_date="2023-01-01", end_date="2024-01-01"),
+
+        Policy(policy_number="ANS-2023-00711", customer_id=c[2].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.deprem, status=PolicyStatus.active,
+               property_address="Istiklal Mah. Ataturk Cad. No:22 D:3", property_city="Kahramanmaras",
+               property_district="Elbistan", property_lat=38.20, property_lon=37.19,
+               property_area_m2=90, coverage_amount=1_600_000, premium_amount=3_100,
+               start_date="2023-01-01", end_date="2024-01-01"),
+
+        Policy(policy_number="ANS-2023-00822", customer_id=c[3].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.konut, status=PolicyStatus.active,
+               property_address="Dulkadiroglu Mah. Istiklal Cad. No:55 D:2", property_city="Kahramanmaras",
+               property_district="Dulkadiroglu", property_lat=37.601, property_lon=36.955,
+               property_area_m2=130, coverage_amount=3_100_000, premium_amount=5_800,
+               start_date="2023-01-01", end_date="2024-01-01"),
+
+        # --- Izmir bolgesi poliçeleri (afet merkezi: 38.39, 26.93, r=80km) ---
+        Policy(policy_number="ANS-2024-00930", customer_id=c[4].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.deprem, status=PolicyStatus.active,
+               property_address="Bayrakli Mah. Kazimdirik Cad. No:22 D:6", property_city="Izmir",
+               property_district="Bayrakli", property_lat=38.461, property_lon=27.153,
+               property_area_m2=85, coverage_amount=2_100_000, premium_amount=4_000,
+               start_date="2024-01-01", end_date="2025-01-01"),
+
+        Policy(policy_number="ANS-2024-01045", customer_id=c[5].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.deprem, status=PolicyStatus.active,
+               property_address="Bornova Mah. Universite Cad. No:8 D:3", property_city="Izmir",
+               property_district="Bornova", property_lat=38.469, property_lon=27.218,
+               property_area_m2=100, coverage_amount=2_400_000, premium_amount=4_500,
+               start_date="2024-01-01", end_date="2025-01-01"),
+
+        # --- Kastamonu bolgesi poliçeleri (afet merkezi: 41.38, 33.78, r=60km) ---
+        Policy(policy_number="ANS-2023-00541", customer_id=c[6].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.sel, status=PolicyStatus.active,
+               property_address="Nasrullah Mah. Cumhuriyet Cad. No:34", property_city="Kastamonu",
+               property_district="Merkez", property_lat=41.384, property_lon=33.782,
+               property_area_m2=95, coverage_amount=1_500_000, premium_amount=2_800,
+               start_date="2021-06-01", end_date="2022-06-01"),
+
+        Policy(policy_number="ANS-2023-00632", customer_id=c[0].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.sel, status=PolicyStatus.active,
+               property_address="Taskopru Mah. Inonu Cad. No:15", property_city="Kastamonu",
+               property_district="Taskopru", property_lat=41.512, property_lon=34.214,
+               property_area_m2=80, coverage_amount=1_200_000, premium_amount=2_300,
+               start_date="2021-06-01", end_date="2022-06-01"),
+
+        # --- Mugla bolgesi poliçeleri (afet merkezi: 37.11, 28.35, r=40km) ---
+        Policy(policy_number="ANS-2024-00781", customer_id=c[1].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.yangin, status=PolicyStatus.active,
+               property_address="Armutalan Mah. Barbaros Cad. No:6", property_city="Mugla",
+               property_district="Marmaris", property_lat=36.856, property_lon=28.272,
+               property_area_m2=140, coverage_amount=3_800_000, premium_amount=7_200,
+               start_date="2024-01-01", end_date="2025-01-01"),
+
+        Policy(policy_number="ANS-2024-00893", customer_id=c[2].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.yangin, status=PolicyStatus.active,
+               property_address="Ula Mah. Ataturk Cad. No:3", property_city="Mugla",
+               property_district="Ula", property_lat=37.110, property_lon=28.434,
+               property_area_m2=160, coverage_amount=2_600_000, premium_amount=5_000,
+               start_date="2024-01-01", end_date="2025-01-01"),
     ]
     db.add_all(policies)
     db.flush()
