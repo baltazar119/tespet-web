@@ -197,7 +197,7 @@ export default function ClaimDetailPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs opacity-80 mb-0.5">Birleşik Hasar Skoru</div>
-                    <div className="text-xs opacity-60">NVIDIA VLM %70 · xView2 Uydu %30</div>
+                    <div className="text-xs opacity-60">xView2 Uydu %70 · NVIDIA VLM %30</div>
                   </div>
                   <div className="text-right">
                     <span className="text-4xl font-bold">{claim.damage_score}</span>

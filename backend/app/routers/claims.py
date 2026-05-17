@@ -70,7 +70,7 @@ async def _run_ai_analysis(claim_id: int, db_url: str):
         # Uydu mevcut görüntü gösterir (hasar yılından sonra yenilenmiş olabilir)
         vlm_score_raw = int(analysis.get("damage_score") or 50)
         sat_score = int(sat_result.get("satellite_score") or vlm_score_raw)
-        combined_score = round(vlm_score_raw * 0.7 + sat_score * 0.3)
+        combined_score = round(sat_score * 0.7 + vlm_score_raw * 0.3)
         print(f"[AI] vlm={vlm_score_raw} sat={sat_score} combined={combined_score}")
 
         # 5) Poliçe bilgilerini al

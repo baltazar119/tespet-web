@@ -349,7 +349,7 @@ export default function CustomerClaimDetailPage() {
               <div className="bg-[#101329] rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-[#BBE5ED]/60 text-xs mb-0.5">Birleşik Hasar Skoru</p>
-                  <p className="text-[#BBE5ED]/40 text-[10px]">Uydu (xView2) %30 · NVIDIA VLM %70</p>
+                  <p className="text-[#BBE5ED]/40 text-[10px]">xView2 Uydu %70 · NVIDIA VLM %30</p>
                 </div>
                 <div className="flex items-end gap-1">
                   <span className={`text-4xl font-black ${damageScoreColor(claim.damage_score!)}`}>
