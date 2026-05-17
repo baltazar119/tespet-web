@@ -233,7 +233,9 @@ def run():
         phone="+90 212 444 0 300",
     )
     db.add_all([anadolu, allianz])
-    db.flush()
+    db.commit()  # Kullanicilar kesinlikle kaydedilsin
+    db.refresh(anadolu)
+    db.refresh(allianz)
 
     # ── MUSTERILER --------------------------------------------------------
     customers = [
@@ -253,7 +255,7 @@ def run():
              hashed_password=pwd.hash("demo1234"), role=UserRole.customer, phone="+90 525 777 8899"),
     ]
     db.add_all(customers)
-    db.flush()
+    db.commit()  # Musteriler de kaydedilsin
     c = customers
 
     # ── AKTIF AFETLER ----------------------------------------------------

@@ -44,6 +44,21 @@ def startup():
         Base.metadata.create_all(bind=engine)
     except Exception as e:
         print(f"[DB] Tablo olusturma hatasi (devam ediliyor): {e}")
+        return
+    # Eksik kolonları ekle (migration)
+    migrations = [
+        "ALTER TABLE claims ADD COLUMN IF NOT EXISTS satellite_image_path VARCHAR",
+    ]
+    try:
+        with engine.connect() as conn:
+            for sql in migrations:
+                try:
+                    conn.execute(__import__("sqlalchemy").text(sql))
+                except Exception:
+                    pass
+            conn.commit()
+    except Exception as e:
+        print(f"[DB] Migration hatasi (devam ediliyor): {e}")
 
 
 @app.get("/health")
