@@ -74,6 +74,7 @@ export default function ClaimDetailPage() {
   if (!claim)  return <div className="text-center pt-20 text-gray-400">Kayıt bulunamadı.</div>;
 
   const canDecide = claim.status === "reviewed";
+  const vlmScore  = claim.vlm_score ?? claim.damage_score ?? 0;
 
   return (
     <div>
@@ -174,22 +175,17 @@ export default function ClaimDetailPage() {
                     <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Görsel Analiz</span>
                     <span className="text-xs text-blue-400 ml-auto">NVIDIA VLM</span>
                   </div>
-                  {(() => {
-                    const vlm = claim.vlm_score ?? claim.damage_score;
-                    return <>
-                      <div className="flex items-end gap-1 mb-2">
-                        <span className={`text-3xl font-bold ${damageScoreColor(vlm)}`}>{vlm}</span>
-                        <span className="text-sm text-blue-400 mb-1">/100</span>
-                      </div>
-                      <div className="w-full bg-blue-100 rounded-full h-2 mb-2">
-                        <div className={`h-2 rounded-full ${vlm >= 75 ? "bg-red-500" : vlm >= 50 ? "bg-orange-400" : vlm >= 25 ? "bg-yellow-400" : "bg-green-400"}`} style={{ width: `${vlm}%` }} />
-                      </div>
-                      <div className="flex justify-between text-xs text-blue-600">
-                        <span>{claim.damage_category ? DAMAGE_LABELS[claim.damage_category] : "—"}</span>
-                        <span>%{claim.ai_confidence} güven</span>
-                      </div>
-                    </>;
-                  })()}
+                  <div className="flex items-end gap-1 mb-2">
+                    <span className={`text-3xl font-bold ${damageScoreColor(vlmScore)}`}>{vlmScore}</span>
+                    <span className="text-sm text-blue-400 mb-1">/100</span>
+                  </div>
+                  <div className="w-full bg-blue-100 rounded-full h-2 mb-2">
+                    <div className={`h-2 rounded-full ${vlmScore >= 75 ? "bg-red-500" : vlmScore >= 50 ? "bg-orange-400" : vlmScore >= 25 ? "bg-yellow-400" : "bg-green-400"}`} style={{ width: `${vlmScore}%` }} />
+                  </div>
+                  <div className="flex justify-between text-xs text-blue-600">
+                    <span>{claim.damage_category ? DAMAGE_LABELS[claim.damage_category] : "—"}</span>
+                    <span>%{claim.ai_confidence} güven</span>
+                  </div>
                 </div>
               </div>
 
