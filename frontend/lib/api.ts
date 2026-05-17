@@ -240,9 +240,12 @@ export interface DisasterPolicyResult {
   distance_km: number;
   priority_score: number;
   satellite_class: string;
+  satellite_score: number;
   combined_score: number;
   estimated_loss: number;
   image_source: string;
+  lat: number;
+  lon: number;
   auto_created?: boolean;
   claim_number?: string;
 }
