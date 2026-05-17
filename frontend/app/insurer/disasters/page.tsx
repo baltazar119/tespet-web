@@ -325,7 +325,7 @@ export default function DisastersPage() {
             />
             <button
               onClick={() => setHeatMode(!heatMode)}
-              className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-700 shadow hover:bg-[#D8EEF2] transition"
+              className="absolute top-3 right-3 z-[1100] flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-700 shadow hover:bg-[#D8EEF2] transition"
             >
               <Map className="w-3.5 h-3.5" />
               {heatMode ? "Coğrafi Harita" : "Isı Haritası"}

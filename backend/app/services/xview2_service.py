@@ -7,11 +7,14 @@ import numpy as np
 from pathlib import Path
 from typing import Optional
 
-MODEL_PATH = Path(__file__).parent.parent.parent / "models" / "best.pth"
+import os
 
-CLASS_NAMES   = ["no-damage", "minor-damage", "major-damage", "destroyed"]
-CLASS_SCORES  = [5, 35, 68, 95]       # her sınıfın merkezi skoru
-CLASS_CATS    = ["none", "minor", "moderate", "severe", "total"]
+MODEL_PATH   = Path(__file__).parent.parent.parent / "models" / "best.pth"
+MOCK_SATELLITE = os.getenv("MOCK_SATELLITE", "false").lower() == "true"
+
+CLASS_NAMES  = ["no-damage", "minor-damage", "major-damage", "destroyed"]
+CLASS_SCORES = [5, 35, 68, 95]       # her sınıfın merkezi skoru
+CLASS_CATS   = ["none", "minor", "moderate", "severe", "total"]
 
 _model = None
 
@@ -68,7 +71,7 @@ def predict_satellite_damage(image_bytes: bytes) -> dict:
       satellite_class       : no-damage/minor-damage/major-damage/destroyed
       satellite_probs       : [p0, p1, p2, p3]
     """
-    if not image_bytes:
+    if MOCK_SATELLITE or not image_bytes:
         return _mock_prediction(image_bytes)
 
     model = _load_model()
@@ -115,9 +118,9 @@ def _mock_prediction(image_bytes: Optional[bytes]) -> dict:
     seed = hash(image_bytes[:32] if image_bytes else b"mock") % 1000
     rng  = random.Random(seed)
 
-    # DASK istatistiklerine dayalı dağılım: çoğunlukla minor/moderate
-    pred  = rng.choices([0, 1, 2, 3], weights=[0.25, 0.35, 0.28, 0.12])[0]
-    score = CLASS_SCORES[pred] + rng.randint(-8, 8)
+    # Demo dağılımı: ağır hasara ağırlık ver
+    pred  = rng.choices([0, 1, 2, 3], weights=[0.05, 0.15, 0.45, 0.35])[0]
+    score = CLASS_SCORES[pred] + rng.randint(-5, 5)
     score = max(0, min(100, score))
     conf  = rng.randint(75, 94)
     cat_map = {0: "none", 1: "minor", 2: "moderate", 3: "severe"}
