@@ -14,8 +14,10 @@ from fpdf import FPDF, XPos, YPos
 _TR_MAP = str.maketrans("ğĞıİşŞ", "gGiIsS")
 
 def _safe(text: str) -> str:
-    """Transliterate non-Latin-1 Turkish chars so Helvetica can render them."""
-    return str(text).translate(_TR_MAP)
+    """Make text safe for Helvetica (Latin-1). Transliterate Turkish-specific
+    chars first, then drop/replace anything else outside Latin-1."""
+    text = str(text).translate(_TR_MAP)
+    return text.encode("latin-1", errors="replace").decode("latin-1")
 
 DAMAGE_LABELS = {
     "none":     "Hasar Yok",
@@ -215,8 +217,8 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
     # ── 2. Poliçe Bilgileri ────────────────────────────────────────────────
     pdf.section_title("2. POLICE BILGILERI")
     if policy:
-        pdf.kv_row("Police Numarasi", policy.policy_number or "-")
-        pdf.kv_row("Police Turu", policy.policy_type or "-")
+        pdf.kv_row("Police Numarasi", _safe(policy.policy_number or "-"))
+        pdf.kv_row("Police Turu", _safe(policy.policy_type or "-"))
         pdf.kv_row("Sigorta Bedeli", f"{policy.coverage_amount:,.0f} TL" if policy.coverage_amount else "-")
         pdf.kv_row("Mulk Adresi", _safe(f"{policy.property_address}, {policy.property_city}"))
         pdf.kv_row("Mulk Alani", f"{policy.property_area_m2} m2" if policy.property_area_m2 else "-")
@@ -226,7 +228,7 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
     # ── 3. Hasar Başvuru Bilgileri ─────────────────────────────────────────
     pdf.section_title("3. HASAR BASVURU BILGILERI")
     disaster_type = getattr(claim, "disaster_type", "")
-    pdf.kv_row("Afet Turu", DISASTER_LABELS.get(disaster_type, disaster_type))
+    pdf.kv_row("Afet Turu", _safe(DISASTER_LABELS.get(disaster_type, disaster_type)))
     pdf.kv_row("Basvuru Aciklamasi", _safe(getattr(claim, "description", "-") or "-"))
     pdf.kv_row("Olay Koordinati",
                f"{claim.incident_lat:.5f}N, {claim.incident_lon:.5f}E"
@@ -251,7 +253,7 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
     pdf.kv_row("Tahmini Onarim Bedeli",
                f"{min_cost:,.0f} TL - {max_cost:,.0f} TL" if min_cost and max_cost else "-",
                bold_val=True)
-    pdf.kv_row("Oncelik Seviyesi", PRIORITY_LABELS.get(priority or "", priority or "-"))
+    pdf.kv_row("Oncelik Seviyesi", _safe(PRIORITY_LABELS.get(priority or "", priority or "-")))
     pdf.kv_row("Saha Ekibi Gerekli", "Evet" if field_req else "Hayir")
 
     # Uydu analizi
@@ -264,7 +266,7 @@ def generate_claim_pdf(claim, policy=None, image_bytes: Optional[bytes] = None,
         pdf.set_text_color(2, 108, 124)
         pdf.cell(0, 7, "  Uydu Goruntüsü Analizi (xView2 + NVIDIA):", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.kv_row("  Uydu Hasar Skoru", f"{int(sat_score)}/100")
-        pdf.kv_row("  Uydu Kategorisi", DAMAGE_LABELS.get(sat_cat or "", sat_cat or "-"))
+        pdf.kv_row("  Uydu Kategorisi", _safe(DAMAGE_LABELS.get(sat_cat or "", sat_cat or "-")))
         pdf.kv_row("  Uydu Guven Orani", f"%{int(sat_conf)}" if sat_conf else "-")
 
     # AI Notu

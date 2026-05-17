@@ -1,14 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getClaim, getPolicy, approveClaim, rejectClaim, downloadClaimReport, type Claim, type Policy } from "@/lib/api";
+import { getClaim, getPolicy, approveClaim, rejectClaim, downloadClaimReport, getSatelliteImageUrl, type Claim, type Policy } from "@/lib/api";
 import {
   formatCurrency, STATUS_LABELS, statusColor, priorityColor, PRIORITY_LABELS,
   DAMAGE_LABELS, damageScoreColor, DISASTER_TYPE_LABELS, POLICY_TYPE_LABELS
 } from "@/lib/utils";
 import {
   CheckCircle, XCircle, AlertTriangle, Brain, MapPin, Shield,
-  FileText, TrendingUp, Clock, ChevronLeft, Loader2, Download
+  FileText, TrendingUp, Clock, ChevronLeft, Loader2, Download, Satellite
 } from "lucide-react";
 import Link from "next/link";
 
@@ -74,6 +74,7 @@ export default function ClaimDetailPage() {
   if (!claim)  return <div className="text-center pt-20 text-gray-400">Kayıt bulunamadı.</div>;
 
   const canDecide = claim.status === "reviewed";
+  const hasAI     = claim.damage_score != null;
   const vlmScore  = claim.vlm_score ?? claim.damage_score ?? 0;
 
   return (
@@ -127,6 +128,27 @@ export default function ClaimDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Uydu Görüntüsü */}
+          {(claim.satellite_image_path || hasAI) && (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                <Satellite className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-semibold text-gray-700">Uydu Görüntüsü — Esri/Maxar</span>
+                <span className="ml-auto text-xs text-gray-400">
+                  {claim.incident_lat.toFixed(4)}, {claim.incident_lon.toFixed(4)}
+                </span>
+              </div>
+              <div className="relative w-full bg-gray-100" style={{ height: 220 }}>
+                <img
+                  src={getSatelliteImageUrl(claim.id)}
+                  alt="Uydu görüntüsü"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Müşteri açıklaması */}
           <div className="bg-white border border-gray-200 rounded-xl p-5">
