@@ -44,6 +44,7 @@ class ClaimOut(BaseModel):
     ai_notes: Optional[str] = None
     expert_report: Optional[str] = None
     satellite_image_path: Optional[str] = None
+    vlm_score: Optional[float] = None
     satellite_score: Optional[float] = None
     satellite_category: Optional[str] = None
     satellite_confidence: Optional[float] = None

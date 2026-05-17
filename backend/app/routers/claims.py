@@ -68,11 +68,10 @@ async def _run_ai_analysis(claim_id: int, db_url: str):
         # 4) İki skoru birleştir — VLM %70, uydu %30
         # VLM müşteri açıklamasını da okur → daha bağlamsal
         # Uydu mevcut görüntü gösterir (hasar yılından sonra yenilenmiş olabilir)
-        vlm_score = int(analysis.get("damage_score") or 50)
-        sat_score = int(sat_result.get("satellite_score") or vlm_score)
-        combined_score = round(vlm_score * 0.7 + sat_score * 0.3)
-        analysis["damage_score"] = combined_score
-        print(f"[AI] vlm={vlm_score} sat={sat_score} combined={combined_score}")
+        vlm_score_raw = int(analysis.get("damage_score") or 50)
+        sat_score = int(sat_result.get("satellite_score") or vlm_score_raw)
+        combined_score = round(vlm_score_raw * 0.7 + sat_score * 0.3)
+        print(f"[AI] vlm={vlm_score_raw} sat={sat_score} combined={combined_score}")
 
         # 5) Poliçe bilgilerini al
         policy = db.query(Policy).filter(Policy.id == claim.policy_id).first()
@@ -91,6 +90,7 @@ async def _run_ai_analysis(claim_id: int, db_url: str):
 
         # 7) Tüm sonuçları kaydet
         cost = analysis.get("estimated_repair_cost_range", {})
+        claim.vlm_score                = vlm_score_raw
         claim.damage_score             = combined_score
         claim.damage_category          = analysis.get("damage_category")
         claim.affected_area_m2         = analysis.get("affected_area_m2")

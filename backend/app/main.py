@@ -48,6 +48,7 @@ def startup():
     # Eksik kolonları ekle (migration)
     migrations = [
         "ALTER TABLE claims ADD COLUMN IF NOT EXISTS satellite_image_path VARCHAR",
+        "ALTER TABLE claims ADD COLUMN IF NOT EXISTS vlm_score FLOAT",
     ]
     try:
         with engine.connect() as conn:

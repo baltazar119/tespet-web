@@ -194,6 +194,7 @@ export interface Claim {
   ai_notes?: string;
   expert_report?: string;
   satellite_image_path?: string;
+  vlm_score?: number;
   satellite_score?: number;
   satellite_category?: string;
   satellite_confidence?: number;

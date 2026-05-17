@@ -58,6 +58,7 @@ class Claim(Base):
 
     # xView2 uydu analizi sonuçları
     satellite_image_path = Column(String, nullable=True)
+    vlm_score = Column(Float, nullable=True)
     satellite_score = Column(Float, nullable=True)       # 0-100
     satellite_category = Column(String, nullable=True)
     satellite_confidence = Column(Float, nullable=True)

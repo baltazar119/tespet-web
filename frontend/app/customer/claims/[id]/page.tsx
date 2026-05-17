@@ -326,28 +326,23 @@ export default function CustomerClaimDetailPage() {
                     <span className="text-xs font-semibold text-[#026C7C] uppercase tracking-wide">Görsel AI</span>
                     <span className="text-[10px] text-[#026C7C]/60 ml-auto bg-[#BBE5ED]/40 px-1.5 py-0.5 rounded">NVIDIA VLM</span>
                   </div>
-                  <div className="flex items-end gap-1 mb-2">
-                    <span className={`text-3xl font-bold ${damageScoreColor(claim.damage_score!)}`}>
-                      {claim.damage_score}
-                    </span>
-                    <span className="text-sm text-[#026C7C]/60 mb-1">/100</span>
-                  </div>
-                  <div className="w-full bg-[#BBE5ED]/40 rounded-full h-1.5 mb-2">
-                    <div
-                      className={`h-1.5 rounded-full ${
-                        claim.damage_score! >= 75 ? "bg-red-500"
-                        : claim.damage_score! >= 50 ? "bg-orange-400"
-                        : claim.damage_score! >= 25 ? "bg-yellow-400"
-                        : "bg-green-400"
-                      }`}
-                      style={{ width: `${claim.damage_score}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-[#026C7C]/70">
-                    <span>{claim.damage_category ? DAMAGE_LABELS[claim.damage_category] : "—"}</span>
-                    <span>%{claim.ai_confidence} güven</span>
-                  </div>
-                </div>
+                  {(() => {
+                    const vlm = claim.vlm_score ?? claim.damage_score!;
+                    return <>
+                      <div className="flex items-end gap-1 mb-2">
+                        <span className={`text-3xl font-bold ${damageScoreColor(vlm)}`}>{vlm}</span>
+                        <span className="text-sm text-[#026C7C]/60 mb-1">/100</span>
+                      </div>
+                      <div className="w-full bg-[#BBE5ED]/40 rounded-full h-1.5 mb-2">
+                        <div className={`h-1.5 rounded-full ${vlm >= 75 ? "bg-red-500" : vlm >= 50 ? "bg-orange-400" : vlm >= 25 ? "bg-yellow-400" : "bg-green-400"}`}
+                          style={{ width: `${vlm}%` }} />
+                      </div>
+                      <div className="flex justify-between text-xs text-[#026C7C]/70">
+                        <span>{claim.damage_category ? DAMAGE_LABELS[claim.damage_category] : "—"}</span>
+                        <span>%{claim.ai_confidence} güven</span>
+                      </div>
+                    </>;
+                  })()}
               </div>
 
               {/* Birleşik skor */}
