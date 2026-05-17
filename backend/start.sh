@@ -27,9 +27,9 @@ else
     echo "[1/3] HF_TOKEN veya HF_REPO_ID tanimlanmamis — xView2 mock modda calisacak"
 fi
 
-# Demo verisi yukle
+# Demo verisi yukle (hata olsa bile devam et)
 echo "[2/3] Demo verisi yukleniyor..."
-python seed_data.py
+python seed_data.py || echo "[!] Seed atlanamadi, bos veritabaniyla devam ediliyor..."
 
 # API'yi baslat
 echo "[3/3] API baslatiliyor: port ${PORT:-8000}"
