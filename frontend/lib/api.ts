@@ -230,6 +230,27 @@ export interface AffectedPolicy {
   priority_score: number;
 }
 
+export interface DisasterPolicyResult {
+  policy_id: number;
+  policy_number: string;
+  property_address: string;
+  property_city: string;
+  coverage_amount: number;
+  policy_type: string;
+  distance_km: number;
+  priority_score: number;
+  damage_class?: string;
+  satellite_score?: number;
+}
+
+export interface DisasterAnalysis {
+  disaster_id: number;
+  total_analyzed: number;
+  damage_summary: Record<string, number>;
+  avg_satellite_score: number;
+  policies: DisasterPolicyResult[];
+}
+
 export interface Analytics {
   total_claims: number;
   approved: number;
