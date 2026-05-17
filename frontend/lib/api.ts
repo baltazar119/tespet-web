@@ -112,6 +112,11 @@ export async function downloadClaimReport(id: number): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+export function getSatelliteImageUrl(claimId: number): string {
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return `${base}/claims/${claimId}/satellite.jpg`;
+}
+
 export async function getDisasters(status?: string) {
   const qs = status ? `?status=${status}` : "";
   return request<Disaster[]>(`/disasters/${qs}`);
@@ -188,6 +193,7 @@ export interface Claim {
   priority_level?: string;
   ai_notes?: string;
   expert_report?: string;
+  satellite_image_path?: string;
   satellite_score?: number;
   satellite_category?: string;
   satellite_confidence?: number;

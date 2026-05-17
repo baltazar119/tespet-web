@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  getClaim, getPolicy, downloadClaimReport,
+  getClaim, getPolicy, downloadClaimReport, getSatelliteImageUrl,
   type Claim, type Policy,
 } from "@/lib/api";
 import {
@@ -240,6 +240,27 @@ export default function CustomerClaimDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Uydu Görüntüsü */}
+          {(claim.satellite_image_path || hasAI) && (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                <Satellite className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-semibold text-gray-700">Uydu Görüntüsü — Esri/Maxar</span>
+                <span className="ml-auto text-xs text-gray-400">
+                  {claim.incident_lat.toFixed(4)}, {claim.incident_lon.toFixed(4)}
+                </span>
+              </div>
+              <div className="relative w-full bg-gray-100" style={{ height: 220 }}>
+                <img
+                  src={getSatelliteImageUrl(claimId)}
+                  alt="Uydu görüntüsü"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Başvuru açıklaması */}
           <div className="bg-white border border-gray-200 rounded-xl p-5">

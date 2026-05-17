@@ -43,6 +43,7 @@ class ClaimOut(BaseModel):
     priority_level: Optional[PriorityLevel] = None
     ai_notes: Optional[str] = None
     expert_report: Optional[str] = None
+    satellite_image_path: Optional[str] = None
     satellite_score: Optional[float] = None
     satellite_category: Optional[str] = None
     satellite_confidence: Optional[float] = None

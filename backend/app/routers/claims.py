@@ -25,7 +25,9 @@ async def _run_ai_analysis(claim_id: int, db_url: str):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    engine = create_engine(db_url, connect_args={"check_same_thread": False})
+    is_sqlite = db_url.startswith("sqlite")
+    connect_args = {"check_same_thread": False} if is_sqlite else {"sslmode": "require"}
+    engine = create_engine(db_url, connect_args=connect_args)
     Session = sessionmaker(bind=engine)
     db = Session()
 
@@ -37,8 +39,17 @@ async def _run_ai_analysis(claim_id: int, db_url: str):
         claim.status = ClaimStatus.analyzing
         db.commit()
 
-        # 1) Uydu görüntüsü al
+        # 1) Uydu görüntüsü al ve kaydet
         image_bytes = await fetch_satellite_image(claim.incident_lat, claim.incident_lon)
+        if image_bytes:
+            from pathlib import Path
+            sat_dir = Path("uploads/satellite")
+            sat_dir.mkdir(parents=True, exist_ok=True)
+            sat_path = sat_dir / f"claim_{claim_id}.jpg"
+            with open(sat_path, "wb") as f:
+                f.write(image_bytes)
+            claim.satellite_image_path = str(sat_path)
+            db.commit()
 
         # 2) xView2 uydu analizi (senkron — CPU inference)
         sat_result = predict_satellite_damage(image_bytes)
@@ -232,6 +243,33 @@ def reject_claim(
     db.commit()
     db.refresh(claim)
     return claim
+
+
+@router.get("/{claim_id}/satellite.jpg")
+async def get_satellite_image(
+    claim_id: int,
+    db: Session = Depends(get_db),
+):
+    """Hasar kaydının uydu görüntüsünü döndür (public)."""
+    claim = db.query(Claim).filter(Claim.id == claim_id).first()
+    if not claim:
+        raise HTTPException(404, "Hasar kaydı bulunamadı")
+
+    # Kaydedilmiş uydu görüntüsü varsa döndür
+    if claim.satellite_image_path:
+        try:
+            with open(claim.satellite_image_path, "rb") as f:
+                return Response(content=f.read(), media_type="image/jpeg")
+        except Exception:
+            pass
+
+    # Yoksa koordinattan gerçek zamanlı çek
+    if claim.incident_lat and claim.incident_lon:
+        img = await fetch_esri_satellite_tile(claim.incident_lat, claim.incident_lon, zoom=16)
+        if img:
+            return Response(content=img, media_type="image/jpeg")
+
+    raise HTTPException(404, "Uydu görüntüsü bulunamadı")
 
 
 @router.get("/{claim_id}/report.pdf")
