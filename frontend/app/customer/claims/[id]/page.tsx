@@ -339,6 +339,7 @@ export default function CustomerClaimDetailPage() {
                     <span>{claim.damage_category ? DAMAGE_LABELS[claim.damage_category] : "—"}</span>
                     <span>%{claim.ai_confidence} güven</span>
                   </div>
+                </div>
               </div>
 
               {/* Birleşik skor */}
@@ -403,18 +404,17 @@ export default function CustomerClaimDetailPage() {
                 <FileText className="w-4 h-4 text-gray-500" />
                 <span className="text-sm font-semibold text-gray-700">Ekspertiz Raporu</span>
               </div>
-              {claim.expert_report && (
-                <button
-                  onClick={handleDownload}
-                  disabled={pdfLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#026C7C] text-white text-xs font-medium rounded-lg hover:bg-[#015f6b] transition disabled:opacity-60"
-                >
-                  {pdfLoading
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : <Download className="w-3.5 h-3.5" />}
-                  PDF İndir
-                </button>
-              )}
+              <button
+                onClick={handleDownload}
+                disabled={pdfLoading || !claim.expert_report}
+                title={!claim.expert_report ? "Rapor henüz hazır değil" : "PDF indir"}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#026C7C] text-white text-xs font-medium rounded-lg hover:bg-[#015f6b] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {pdfLoading
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Download className="w-3.5 h-3.5" />}
+                PDF İndir
+              </button>
             </div>
 
             {claim.expert_report ? (

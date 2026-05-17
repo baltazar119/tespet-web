@@ -71,7 +71,7 @@ function NotificationDropdown({ userId }: { userId: number }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+        <div className="fixed right-4 top-20 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[100] overflow-hidden">
           <div className="px-4 py-3 bg-[#D8EEF2] flex items-center justify-between">
             <span className="font-semibold text-[#101329] text-sm">Bildirimler</span>
             {items.length > 0 && (

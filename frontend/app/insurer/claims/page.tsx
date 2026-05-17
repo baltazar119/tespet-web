@@ -39,21 +39,24 @@ export default function InsurerClaimsPage() {
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Filter className="w-4 h-4" />Filtrele:
         </div>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+          className={`text-sm rounded-lg px-3 py-1.5 border focus:outline-none focus:ring-2 focus:ring-[#026C7C] font-medium ${filterStatus ? "bg-[#026C7C] text-white border-[#026C7C]" : "bg-white text-gray-700 border-gray-300"}`}>
           <option value="">Tüm Durumlar</option>
           {FILTER_STATUSES.filter(Boolean).map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
         </select>
-        <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}
+          className={`text-sm rounded-lg px-3 py-1.5 border focus:outline-none focus:ring-2 focus:ring-[#026C7C] font-medium ${filterPriority ? "bg-[#026C7C] text-white border-[#026C7C]" : "bg-white text-gray-700 border-gray-300"}`}>
           <option value="">Tüm Öncelikler</option>
           {FILTER_PRIORITIES.filter(Boolean).map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
         </select>
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}
+          className={`text-sm rounded-lg px-3 py-1.5 border focus:outline-none focus:ring-2 focus:ring-[#026C7C] font-medium ${filterType ? "bg-[#026C7C] text-white border-[#026C7C]" : "bg-white text-gray-700 border-gray-300"}`}>
           <option value="">Tüm Afet Türleri</option>
           {FILTER_TYPES.filter(Boolean).map((t) => <option key={t} value={t}>{DISASTER_TYPE_LABELS[t]}</option>)}
         </select>
         {(filterStatus || filterPriority || filterType) && (
-          <button onClick={() => { setFilterStatus(""); setFilterPriority(""); setFilterType(""); }} className="text-sm text-blue-600 hover:text-blue-700">
-            Temizle
+          <button onClick={() => { setFilterStatus(""); setFilterPriority(""); setFilterType(""); }} className="text-sm text-[#026C7C] hover:text-[#015f6b] font-medium underline underline-offset-2">
+            Temizle ✕
           </button>
         )}
       </div>

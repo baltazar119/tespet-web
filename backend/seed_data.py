@@ -343,6 +343,13 @@ def run():
                property_area_m2=95, coverage_amount=2_500_000, premium_amount=4_800,
                start_date="2023-01-01", end_date="2024-01-01"),
 
+        Policy(policy_number="ANS-2024-00601", customer_id=c[0].id, insurer_id=anadolu.id,
+               policy_type=PolicyType.deprem, status=PolicyStatus.active,
+               property_address="Guzelyali Mah. Sahil Yolu No:18 D:5", property_city="Kocaeli",
+               property_district="Gebze", property_lat=40.777661, property_lon=29.390128,
+               property_area_m2=110, coverage_amount=3_200_000, premium_amount=5_400,
+               start_date="2024-01-01", end_date="2025-01-01"),
+
         Policy(policy_number="ANS-2023-00287", customer_id=c[1].id, insurer_id=anadolu.id,
                policy_type=PolicyType.sel, status=PolicyStatus.active,
                property_address="Cumhuriyet Mah. Bozkurt Cd. No:12", property_city="Kastamonu",
