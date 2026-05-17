@@ -12,5 +12,11 @@ services:
         sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: HF_TOKEN
+        sync: false
+      - key: HF_REPO_ID
+        sync: false
       - key: PORT
-        value: 8000
+        value: 10000
