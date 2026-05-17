@@ -85,15 +85,15 @@ async def analyze_damage_with_vision(
 ) -> dict:
     """Görüntüyü NVIDIA VLM ile analiz et, API yoksa mock döndür."""
 
-    if not NVIDIA_API_KEY or not image_bytes:
-        # Mock mod — gerçekçi verilerle
+    if not NVIDIA_API_KEY:
+        # API key yok — mock mod
         base = MOCK_ANALYSES.get(disaster_type, MOCK_ANALYSES["deprem"])
         import random
         variation = random.uniform(0.85, 1.15)
         result = base.copy()
         result["damage_score"] = min(100, round(base["damage_score"] * variation))
         result["affected_area_m2"] = round(base["affected_area_m2"] * variation)
-        await asyncio.sleep(2)  # gerçekçi analiz gecikmesi simüle et
+        await asyncio.sleep(2)
         return result
 
     client = AsyncOpenAI(
@@ -101,9 +101,10 @@ async def analyze_damage_with_vision(
         api_key=NVIDIA_API_KEY,
     )
 
-    image_b64 = base64.b64encode(image_bytes).decode()
-
-    prompt = f"""You are an expert insurance damage assessor analyzing satellite imagery after a {disaster_type} disaster in Turkey.
+    # Görüntü varsa vision prompt, yoksa text-only (koordinat + açıklama bazlı)
+    if image_bytes:
+        image_b64 = base64.b64encode(image_bytes).decode()
+        prompt = f"""You are an expert insurance damage assessor analyzing satellite imagery after a {disaster_type} disaster in Turkey.
 
 Customer reported: "{description}"
 Location: {lat:.4f}N, {lon:.4f}E
@@ -122,22 +123,43 @@ Analyze this satellite image and return ONLY a valid JSON object with these exac
 }}
 
 Return ONLY the JSON, no other text."""
+        content = [
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}},
+            {"type": "text", "text": prompt},
+        ]
+    else:
+        # Uydu görüntüsü yok — metin bazlı analiz (koordinat + açıklama + afet türü)
+        prompt = f"""You are an expert insurance damage assessor. No satellite image is available.
+Estimate damage based on the disaster type, customer description, and location.
+
+Disaster type: {disaster_type}
+Customer reported: "{description}"
+Location: {lat:.4f}N, {lon:.4f}E (Turkey)
+
+Return ONLY a valid JSON object with these exact fields:
+{{
+  "damage_score": <integer 0-100>,
+  "damage_category": <"none"|"minor"|"moderate"|"severe"|"total">,
+  "affected_area_m2": <integer>,
+  "confidence": <integer 0-100>,
+  "visible_damage_indicators": [<list of strings in Turkish describing expected damage>],
+  "estimated_repair_cost_range": {{"min": <integer in TRY>, "max": <integer in TRY>}},
+  "field_inspection_required": <true|false>,
+  "priority_level": <"low"|"medium"|"high"|"critical">,
+  "expert_notes": <string in Turkish, 2-3 sentences>
+}}
+
+Return ONLY the JSON, no other text."""
+        content = [{"type": "text", "text": prompt}]
 
     try:
         response = await client.chat.completions.create(
             model=VISION_MODEL,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}},
-                    {"type": "text", "text": prompt}
-                ]
-            }],
+            messages=[{"role": "user", "content": content}],
             max_tokens=1024,
             temperature=0.1,
         )
         raw = response.choices[0].message.content.strip()
-        # JSON bloğunu çıkar
         match = re.search(r'\{.*\}', raw, re.DOTALL)
         if match:
             return json.loads(match.group())
